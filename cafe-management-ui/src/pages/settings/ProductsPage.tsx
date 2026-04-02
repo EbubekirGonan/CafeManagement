@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../../api/products';
 import { categoryApi } from '../../api/categories';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function ProductsPage() {
   const queryClient = useQueryClient();
@@ -32,11 +33,32 @@ export default function ProductsPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name: string; price: number; category_id: string } }) =>
+      productApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Ürün güncellendi');
+      setEditingId(null);
+    },
+  });
+
   const [form, setForm] = useState({
     name: '',
     price: '',
     category_id: '',
   });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', price: '', category_id: '' });
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const startEdit = (p: { id: string; name: string; price: number; category_id: string }) => {
+    setEditingId(p.id);
+    setEditForm({ name: p.name, price: String(p.price), category_id: p.category_id });
+  };
+
+  const cancelEdit = () => setEditingId(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -81,11 +103,63 @@ export default function ProductsPage() {
             ) : (
               products?.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-800">{p.name}</td>
-                  <td className="px-4 py-3 text-gray-600">₺{p.price}</td>
-                  <td className="px-4 py-3 text-gray-600">{categories?.find((c) => c.id === p.category_id)?.name ?? p.category_id}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => deleteMutation.mutate(p.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">Sil</button>
+                  <td className="px-4 py-3 text-gray-800">
+                    {editingId === p.id ? (
+                      <input
+                        autoFocus
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 w-full max-w-xs"
+                      />
+                    ) : p.name}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {editingId === p.id ? (
+                      <input
+                        type="number"
+                        step="any"
+                        value={editForm.price}
+                        onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                        className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 w-24"
+                      />
+                    ) : `₺${p.price}`}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {editingId === p.id ? (
+                      <select
+                        value={editForm.category_id}
+                        onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value })}
+                        className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800"
+                      >
+                        {categories?.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    ) : categories?.find((c) => c.id === p.category_id)?.name ?? p.category_id}
+                  </td>
+                  <td className="px-4 py-3 text-right flex items-center justify-end gap-3">
+                    {editingId === p.id ? (
+                      <>
+                        <button
+                          onClick={() => updateMutation.mutate({ id: p.id, data: { name: editForm.name, price: Number(editForm.price), category_id: editForm.category_id } })}
+                          disabled={updateMutation.isPending}
+                          className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50"
+                        >
+                          Kaydet
+                        </button>
+                        <button onClick={cancelEdit} className="text-gray-500 hover:text-gray-700 text-sm font-medium">İptal</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => startEdit(p)} className="text-blue-500 hover:text-blue-700 text-sm font-medium">Düzenle</button>
+                        <button
+                          onClick={() => setConfirmId(p.id)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                        >
+                          Sil
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))
@@ -93,6 +167,14 @@ export default function ProductsPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmId !== null}
+        title="Kaydı Sil"
+        message="Bu kaydı silmek istediğinizden emin misiniz?"
+        onConfirm={() => { if (confirmId) deleteMutation.mutate(confirmId); setConfirmId(null); }}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 }

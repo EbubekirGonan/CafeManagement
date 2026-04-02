@@ -5,6 +5,7 @@ import { sessionApi } from '../api/sessions';
 import { orderItemApi } from '../api/order-items';
 import type { TableSeat } from '../types';
 import OrderModal from './OrderModal';
+import ConfirmDialog from './ConfirmDialog';
 
 interface Props {
   table: TableSeat;
@@ -15,6 +16,7 @@ export default function TableDetailModal({ table, onClose }: Props) {
   const queryClient = useQueryClient();
   const [showOrder, setShowOrder] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ['active-session', table.id],
@@ -149,7 +151,7 @@ export default function TableDetailModal({ table, onClose }: Props) {
           </button>
           {hasSession && (
             <button
-              onClick={handleCloseSession}
+              onClick={() => setShowCloseConfirm(true)}
               disabled={closing}
               className="flex-1 py-2.5 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
@@ -158,6 +160,14 @@ export default function TableDetailModal({ table, onClose }: Props) {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showCloseConfirm}
+        title="Hesabı Kapat"
+        message="Hesabı kapatmak istediğinizden emin misiniz?"
+        confirmText="Evet, Kapat"        confirmButtonVariant="success"        onConfirm={() => { setShowCloseConfirm(false); handleCloseSession(); }}
+        onCancel={() => setShowCloseConfirm(false)}
+      />
     </div>
   );
 }

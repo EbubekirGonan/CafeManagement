@@ -1,11 +1,12 @@
-import { IsString, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsDateString, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateExpenseDto {
   @IsString()
   name: string;
 
-  @IsString()
-  expense_category: string;
+  @IsUUID()
+  @IsOptional()
+  expense_category_id?: string;
 
   @IsString()
   unit: string;

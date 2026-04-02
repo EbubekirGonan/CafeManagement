@@ -13,6 +13,7 @@ import { CategoryModule } from './modules/category.module';
 import { ProductModule } from './modules/product.module';
 import { OrderItemModule } from './modules/order-item.module';
 import { ExpenseModule } from './modules/expense.module';
+import { ExpenseCategoryModule } from './modules/expense-category.module';
 import { AuthModule } from './modules/auth.module';
 import { DashboardModule } from './modules/dashboard.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -43,6 +44,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     ProductModule,
     OrderItemModule,
     ExpenseModule,
+    ExpenseCategoryModule,
     AuthModule,
     DashboardModule,
   ],

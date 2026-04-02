@@ -1,0 +1,57 @@
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+
+# ── Build outputs ─────────────────────────────────────────────
+dist/
+build/
+out/
+cafe-management/dist/
+cafe-management-ui/dist/
+
+# ── Version control ───────────────────────────────────────────
+.git/
+
+# ── Logs & lock files ─────────────────────────────────────────
+*.log
+*.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ── Environment & secrets ─────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Test coverage ─────────────────────────────────────────────
+coverage/
+
+# ── Editor / OS noise ─────────────────────────────────────────
+.DS_Store
+.vscode/
+*.swp
+
+# ── Binary / large assets ─────────────────────────────────────
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+cafe-management-ui/public/
+
+# ── Project-specific ──────────────────────────────────────────
+# Generated ERD visualization — not source code
+kafe_db_erd.html
+
+# NestJS compiled JS inside src (shouldn't exist but just in case)
+cafe-management/src/**/*.js
+cafe-management/src/**/*.js.map
+
+# Test boilerplate
+cafe-management/test/
+cafe-management/src/app.controller.spec.ts

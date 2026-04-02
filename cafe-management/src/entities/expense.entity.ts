@@ -6,6 +6,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Business } from './business.entity';
+import { ExpenseCategory } from './expense-category.entity';
 
 @Entity('expenses')
 export class Expense {
@@ -15,8 +16,12 @@ export class Expense {
   @Column()
   name: string;
 
-  @Column()
-  expense_category: string;
+  @ManyToOne(() => ExpenseCategory, (ec) => ec.expenses, { eager: false, nullable: true })
+  @JoinColumn({ name: 'expense_category_id' })
+  expenseCategory: ExpenseCategory;
+
+  @Column({ nullable: true })
+  expense_category_id: string;
 
   @Column()
   unit: string;

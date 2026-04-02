@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { expenseApi } from '../api/expenses';
+import { expenseCategoryApi } from '../api/expense-categories';
 import toast from 'react-hot-toast';
 import type { Expense } from '../types';
 
@@ -9,6 +10,11 @@ export default function ExpensesPage() {
   const { data: expenses, isLoading } = useQuery({
     queryKey: ['expenses'],
     queryFn: () => expenseApi.getAll().then((r) => r.data),
+  });
+
+  const { data: expenseCategories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['expense-categories'],
+    queryFn: () => expenseCategoryApi.getAll().then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -29,7 +35,7 @@ export default function ExpensesPage() {
 
   const [form, setForm] = useState({
     name: '',
-    expense_category: '',
+    expenseCategoryId: '',
     unit: '',
     quantity: '',
     amount: '',
@@ -43,7 +49,7 @@ export default function ExpensesPage() {
       quantity: Number(form.quantity),
       amount: Number(form.amount),
     });
-    setForm({ name: '', expense_category: '', unit: '', quantity: '', amount: '', date: '' });
+    setForm({ name: '', expenseCategoryId: '', unit: '', quantity: '', amount: '', date: '' });
   };
 
   return (
@@ -55,7 +61,18 @@ export default function ExpensesPage() {
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Yeni Gider Ekle</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
           <input placeholder="Ad" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
-          <input placeholder="Gider Kategorisi" required value={form.expense_category} onChange={(e) => setForm({ ...form, expense_category: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
+          <select
+            required
+            disabled={categoriesLoading}
+            value={form.expenseCategoryId}
+            onChange={(e) => setForm({ ...form, expenseCategoryId: e.target.value })}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 disabled:opacity-50"
+          >
+            <option value="">Gider Kategorisi Seçin</option>
+            {expenseCategories?.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           <input placeholder="Birim" required value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
           <input placeholder="Miktar" type="number" step="any" required value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
           <input placeholder="Tutar" type="number" step="any" required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800" />
@@ -88,7 +105,9 @@ export default function ExpensesPage() {
               expenses?.map((exp) => (
                 <tr key={exp.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-800">{exp.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{exp.expense_category}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {expenseCategories?.find((c) => c.id === exp.expenseCategoryId)?.name ?? '—'}
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{exp.quantity} {exp.unit}</td>
                   <td className="px-4 py-3 text-gray-600">₺{exp.amount}</td>
                   <td className="px-4 py-3 text-gray-600">{new Date(exp.date).toLocaleDateString('tr-TR')}</td>

@@ -4,6 +4,7 @@ import { tableSeatApi } from '../../api/table-seats';
 import { sectionApi } from '../../api/sections';
 import { TableStatus } from '../../types';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function TablesSettingsPage() {
   const queryClient = useQueryClient();
@@ -33,8 +34,20 @@ export default function TablesSettingsPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => tableSeatApi.update(id, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['table-seats'] });
+      toast.success('Masa güncellendi');
+      setEditingId(null);
+    },
+  });
+
   const [name, setName] = useState('');
   const [sectionId, setSectionId] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -42,6 +55,13 @@ export default function TablesSettingsPage() {
     setName('');
     setSectionId('');
   };
+
+  const startEdit = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditingName(currentName);
+  };
+
+  const cancelEdit = () => setEditingId(null);
 
   return (
     <div>
@@ -79,11 +99,43 @@ export default function TablesSettingsPage() {
             ) : (
               tables?.map((t) => (
                 <tr key={t.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-800">{t.name}</td>
+                  <td className="px-4 py-3 text-gray-800">
+                    {editingId === t.id ? (
+                      <input
+                        autoFocus
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 w-full max-w-xs"
+                      />
+                    ) : (
+                      t.name
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{t.status}</td>
                   <td className="px-4 py-3 text-gray-600">{sections?.find((s) => s.id === t.section_id)?.name ?? t.section_id}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => deleteMutation.mutate(t.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">Sil</button>
+                  <td className="px-4 py-3 text-right flex items-center justify-end gap-3">
+                    {editingId === t.id ? (
+                      <>
+                        <button
+                          onClick={() => updateMutation.mutate({ id: t.id, name: editingName })}
+                          disabled={updateMutation.isPending}
+                          className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50"
+                        >
+                          Kaydet
+                        </button>
+                        <button onClick={cancelEdit} className="text-gray-500 hover:text-gray-700 text-sm font-medium">İptal</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => startEdit(t.id, t.name)} className="text-blue-500 hover:text-blue-700 text-sm font-medium">Düzenle</button>
+                        <button
+                          onClick={() => setConfirmId(t.id)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                        >
+                          Sil
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))
@@ -91,6 +143,14 @@ export default function TablesSettingsPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmId !== null}
+        title="Kaydı Sil"
+        message="Bu kaydı silmek istediğinizden emin misiniz?"
+        onConfirm={() => { if (confirmId) deleteMutation.mutate(confirmId); setConfirmId(null); }}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 }

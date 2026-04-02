@@ -1,11 +1,84 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { sessionApi } from '../api/sessions';
+import { orderItemApi } from '../api/order-items';
+import type { Session } from '../types';
+
+function SessionDetailModal({ session, onClose }: { session: Session; onClose: () => void }) {
+  const { data: items, isLoading } = useQuery({
+    queryKey: ['session-items', session.id],
+    queryFn: () => orderItemApi.getBySession(session.id).then((r) => r.data),
+  });
+
+  const total = items?.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0) ?? 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">
+              {session.table?.name ?? 'Masa'} — Sipariş Detayı
+            </h2>
+            {session.table?.section?.name && (
+              <p className="text-sm text-gray-400">{session.table.section.name}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin w-6 h-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+          ) : !items || items.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-10">Sipariş bulunamadı</p>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ürün</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Birim</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Adet</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-6 py-3 text-sm text-gray-800">{item.product?.name ?? '—'}</td>
+                    <td className="px-6 py-3 text-sm text-gray-600 text-right">{Number(item.price).toFixed(2)} ₺</td>
+                    <td className="px-6 py-3 text-sm text-gray-600 text-right">{item.quantity}</td>
+                    <td className="px-6 py-3 text-sm font-semibold text-gray-800 text-right">{(item.quantity * Number(item.price)).toFixed(2)} ₺</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {!isLoading && items && items.length > 0 && (
+          <div className="border-t px-6 py-4 flex justify-between items-center bg-gray-50 rounded-b-2xl">
+            <span className="font-semibold text-gray-700">Genel Toplam</span>
+            <span className="text-xl font-bold text-blue-700">{total.toFixed(2)} ₺</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type DateFilter = 'today' | 'week' | 'month' | 'all';
 
 export default function SalesPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
+  const [detailSession, setDetailSession] = useState<Session | null>(null);
 
   const { data: sessions, isLoading } = useQuery({
     queryKey: ['paid-sessions'],
@@ -113,6 +186,7 @@ export default function SalesPage() {
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   Toplam Tutar
                 </th>
+                <th className="px-6 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -136,11 +210,29 @@ export default function SalesPage() {
                   <td className="px-6 py-4 text-sm text-gray-900 font-semibold text-right">
                     {Number(session.total_price ?? 0).toFixed(2)} ₺
                   </td>
+                  <td className="px-4 py-4 text-center">
+                    <button
+                      onClick={() => setDetailSession(session)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Detay"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                      </svg>
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {detailSession && (
+        <SessionDetailModal
+          session={detailSession}
+          onClose={() => setDetailSession(null)}
+        />
       )}
     </div>
   );

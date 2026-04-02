@@ -64,6 +64,11 @@ export interface Category {
   name: string;
 }
 
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -83,7 +88,7 @@ export interface OrderItem {
 export interface Expense {
   id: string;
   name: string;
-  expense_category: string;
+  expenseCategoryId: string;
   unit: string;
   quantity: number;
   amount: number;

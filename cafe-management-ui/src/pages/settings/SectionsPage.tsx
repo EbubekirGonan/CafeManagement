@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sectionApi } from '../../api/sections';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function SectionsPage() {
   const queryClient = useQueryClient();
@@ -26,13 +27,32 @@ export default function SectionsPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => sectionApi.update(id, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sections'] });
+      toast.success('Bölüm güncellendi');
+      setEditingId(null);
+    },
+  });
+
   const [name, setName] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     createMutation.mutate({ name });
     setName('');
   };
+
+  const startEdit = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditingName(currentName);
+  };
+
+  const cancelEdit = () => setEditingId(null);
 
   return (
     <div>
@@ -62,9 +82,41 @@ export default function SectionsPage() {
             ) : (
               sections?.map((sec) => (
                 <tr key={sec.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-800">{sec.name}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => deleteMutation.mutate(sec.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">Sil</button>
+                  <td className="px-4 py-3 text-gray-800">
+                    {editingId === sec.id ? (
+                      <input
+                        autoFocus
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 w-full max-w-xs"
+                      />
+                    ) : (
+                      sec.name
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right flex items-center justify-end gap-3">
+                    {editingId === sec.id ? (
+                      <>
+                        <button
+                          onClick={() => updateMutation.mutate({ id: sec.id, name: editingName })}
+                          disabled={updateMutation.isPending}
+                          className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50"
+                        >
+                          Kaydet
+                        </button>
+                        <button onClick={cancelEdit} className="text-gray-500 hover:text-gray-700 text-sm font-medium">İptal</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => startEdit(sec.id, sec.name)} className="text-blue-500 hover:text-blue-700 text-sm font-medium">Düzenle</button>
+                        <button
+                          onClick={() => setConfirmId(sec.id)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                        >
+                          Sil
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))
@@ -72,6 +124,14 @@ export default function SectionsPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmId !== null}
+        title="Kaydı Sil"
+        message="Bu kaydı silmek istediğinizden emin misiniz?"
+        onConfirm={() => { if (confirmId) deleteMutation.mutate(confirmId); setConfirmId(null); }}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 }

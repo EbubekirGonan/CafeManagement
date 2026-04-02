@@ -24,3 +24,7 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+
+#terminal db
+psql -U postgres -h localhost -p 5433 -d cafe_management 

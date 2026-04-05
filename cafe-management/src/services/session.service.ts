@@ -34,16 +34,20 @@ export class SessionService {
     });
   }
 
-  findAll(status?: string) {
+  findAll(business_id: string, status?: string) {
     const relations = { table: { section: true } };
     if (status) {
       return this.sessionRepository.find({
-        where: { status: status as SessionStatus },
+        where: { status: status as SessionStatus, table: { section: { business_id } } },
         relations,
         order: { opened_at: 'DESC' },
       });
     }
-    return this.sessionRepository.find({ relations, order: { opened_at: 'DESC' } });
+    return this.sessionRepository.find({
+      where: { table: { section: { business_id } } },
+      relations,
+      order: { opened_at: 'DESC' },
+    });
   }
 
   async findOne(id: string) {
@@ -52,9 +56,10 @@ export class SessionService {
     return session;
   }
 
-  async findActiveByTable(tableId: string) {
+  async findActiveByTable(tableId: string, business_id: string) {
     return this.sessionRepository.findOne({
-      where: { table_id: tableId, status: SessionStatus.OPEN },
+      where: { table_id: tableId, status: SessionStatus.OPEN, table: { section: { business_id } } },
+      relations: { table: { section: true } },
     });
   }
 

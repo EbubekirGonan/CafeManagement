@@ -9,6 +9,7 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { SessionService } from '../services/session.service';
 import { CreateSessionDto } from '../dto/session/create-session.dto';
@@ -24,13 +25,13 @@ export class SessionController {
   }
 
   @Get()
-  findAll(@Query('status') status?: string) {
-    return this.sessionService.findAll(status);
+  findAll(@Query('status') status: string | undefined, @Req() req) {
+    return this.sessionService.findAll(req.user.business_id, status);
   }
 
   @Get('table/:tableId/active')
-  findActiveByTable(@Param('tableId', ParseUUIDPipe) tableId: string) {
-    return this.sessionService.findActiveByTable(tableId);
+  findActiveByTable(@Param('tableId', ParseUUIDPipe) tableId: string, @Req() req) {
+    return this.sessionService.findActiveByTable(tableId, req.user.business_id);
   }
 
   @Get(':id')

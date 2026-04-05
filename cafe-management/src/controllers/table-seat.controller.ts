@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { TableSeatService } from '../services/table-seat.service';
 import { CreateTableSeatDto } from '../dto/table-seat/create-table-seat.dto';
@@ -22,25 +23,26 @@ export class TableSeatController {
   }
 
   @Get()
-  findAll() {
-    return this.tableSeatService.findAll();
+  findAll(@Req() req) {
+    return this.tableSeatService.findAll(req.user.business_id);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.tableSeatService.findOne(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
+    return this.tableSeatService.findOne(id, req.user.business_id);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTableSeatDto,
+    @Req() req,
   ) {
-    return this.tableSeatService.update(id, dto);
+    return this.tableSeatService.update(id, dto, req.user.business_id);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.tableSeatService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
+    return this.tableSeatService.remove(id, req.user.business_id);
   }
 }

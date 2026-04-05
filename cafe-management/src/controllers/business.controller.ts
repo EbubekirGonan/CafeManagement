@@ -7,11 +7,16 @@ import {
   Body,
   Param,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { BusinessService } from '../services/business.service';
 import { CreateBusinessDto } from '../dto/business/create-business.dto';
 import { UpdateBusinessDto } from '../dto/business/update-business.dto';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
 
+@UseGuards(RolesGuard)
+@Roles('superadmin')
 @Controller('businesses')
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}

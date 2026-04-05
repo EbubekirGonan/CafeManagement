@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth';
 import { setToken, setUser } from '../utils/auth';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,8 +19,13 @@ export default function LoginPage() {
       const { data } = await authApi.login({ email, password });
       setToken(data.access_token);
       setUser(data.user);
+      queryClient.clear();
       toast.success('Giriş başarılı');
-      navigate('/dashboard');
+      if (data.user.role === 'superadmin') {
+        navigate('/admin/businesses');
+      } else {
+        navigate('/dashboard');
+      }
     } catch {
       toast.error('Giriş başarısız. Bilgilerinizi kontrol edin.');
     } finally {

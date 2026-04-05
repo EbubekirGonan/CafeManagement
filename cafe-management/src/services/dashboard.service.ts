@@ -21,17 +21,24 @@ export class DashboardService {
     todayEnd.setHours(23, 59, 59, 999);
 
     // Open sessions (active right now)
-    const openCount = await this.sessionRepository.count({
+    const openSessions = await this.sessionRepository.find({
       where: { status: SessionStatus.OPEN },
+      relations: { table: { section: true } },
     });
+    const openCount = openSessions.filter(
+      (s) => s.table?.section?.business_id === business_id,
+    ).length;
 
     // Sessions closed (paid) today
-    const closedTodaySessions = await this.sessionRepository.find({
-      where: {
-        status: SessionStatus.PAID,
-        closed_at: Between(todayStart, todayEnd),
-      },
-    });
+    const closedTodaySessions = (
+      await this.sessionRepository.find({
+        where: {
+          status: SessionStatus.PAID,
+          closed_at: Between(todayStart, todayEnd),
+        },
+        relations: { table: { section: true } },
+      })
+    ).filter((s) => s.table?.section?.business_id === business_id);
 
     const closedTodayCount = closedTodaySessions.length;
 

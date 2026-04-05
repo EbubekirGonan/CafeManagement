@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useSections } from '../hooks/useSections';
+import { useQueryClient } from '@tanstack/react-query';
 import { removeToken } from '../utils/auth';
 
 const menuIconClass = 'w-5 h-5';
@@ -31,7 +32,10 @@ export default function Sidebar() {
         : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
     }`;
 
+  const queryClient = useQueryClient();
+
   const handleLogout = () => {
+    queryClient.clear();
     removeToken();
     navigate('/login');
   };

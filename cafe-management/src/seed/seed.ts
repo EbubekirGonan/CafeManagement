@@ -137,6 +137,30 @@ async function seed() {
     }
   }
 
+  // --- Superadmin ---
+  let systemBusiness = await businessRepo.findOne({ where: { name: 'System' } });
+  if (!systemBusiness) {
+    systemBusiness = await businessRepo.save({ name: 'System' });
+    console.log('İşletme oluşturuldu: System');
+  } else {
+    console.log('İşletme zaten mevcut: System');
+  }
+
+  const existingSuperAdmin = await userRepo.findOne({ where: { email: 'superadmin@kafe.com' } });
+  if (!existingSuperAdmin) {
+    const passwordHash = await bcrypt.hash('123456', 10);
+    await userRepo.save({
+      name: 'Super Admin',
+      email: 'superadmin@kafe.com',
+      password_hash: passwordHash,
+      role: 'superadmin',
+      business_id: (systemBusiness as any).id,
+    });
+    console.log('Kullanıcı oluşturuldu: superadmin@kafe.com');
+  } else {
+    console.log('Kullanıcı zaten mevcut: superadmin@kafe.com');
+  }
+
   await dataSource.destroy();
   console.log('\nSeed tamamlandı.');
 }

@@ -12,7 +12,7 @@ export default function TablesPage() {
   const sectionId = searchParams.get('section');
   const [selectedTable, setSelectedTable] = useState<TableSeat | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const highlightTimer = useRef<ReturnType<typeof setTimeout>>();
+  const highlightTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     return () => clearTimeout(highlightTimer.current);
@@ -44,6 +44,28 @@ export default function TablesPage() {
     ? (tables ?? []).filter((t) => t.section_id === sectionId)
     : (tables ?? []);
 
+  // Grouping for "all tables" view
+  const groupedBySections = (() => {
+    const allTables = tables ?? [];
+    const allSections = sections ?? [];
+    const groups: { id: string | null; name: string; tables: TableSeat[] }[] = [];
+
+    for (const section of allSections) {
+      const sectionTables = allTables.filter((t) => t.section_id === section.id);
+      if (sectionTables.length > 0) {
+        groups.push({ id: section.id, name: section.name, tables: sectionTables });
+      }
+    }
+
+    const knownSectionIds = new Set(allSections.map((s) => s.id));
+    const otherTables = allTables.filter((t) => !t.section_id || !knownSectionIds.has(t.section_id));
+    if (otherTables.length > 0) {
+      groups.push({ id: null, name: 'Diğer', tables: otherTables });
+    }
+
+    return groups;
+  })();
+
   const statusColor = (status: string) => {
     switch (status) {
       case 'available':
@@ -74,31 +96,71 @@ export default function TablesPage() {
 
       {isLoading ? (
         <p className="text-gray-500">Yükleniyor...</p>
-      ) : filtered.length === 0 ? (
+      ) : sectionId ? (
+        filtered.length === 0 ? (
+          <p className="text-gray-500">Masa bulunamadı.</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filtered.map((table) => {
+              const session = openSessionByTable[table.id];
+              const runningTotal = session ? Number(session.total_price ?? 0) : null;
+              return (
+                <div
+                  key={table.id}
+                  onClick={() => setSelectedTable(table)}
+                  className={`rounded-xl border-2 p-5 text-center cursor-pointer hover:shadow-md transition-all duration-500 ${statusColor(table.status)} ${highlightId === table.id ? 'ring-3 ring-blue-400 shadow-lg scale-105' : ''}`}
+                >
+                  <p className="font-semibold text-lg">{table.name}</p>
+                  <p className="text-xs mt-1 uppercase tracking-wide font-medium">
+                    {statusLabel(table.status)}
+                  </p>
+                  {runningTotal !== null && (
+                    <p className="text-sm font-bold mt-2">
+                      {runningTotal.toFixed(2)} ₺
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : groupedBySections.length === 0 ? (
         <p className="text-gray-500">Masa bulunamadı.</p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filtered.map((table) => {
-            const session = openSessionByTable[table.id];
-            const runningTotal = session ? Number(session.total_price ?? 0) : null;
-            return (
-              <div
-                key={table.id}
-                onClick={() => setSelectedTable(table)}
-                className={`rounded-xl border-2 p-5 text-center cursor-pointer hover:shadow-md transition-all duration-500 ${statusColor(table.status)} ${highlightId === table.id ? 'ring-3 ring-blue-400 shadow-lg scale-105' : ''}`}
-              >
-                <p className="font-semibold text-lg">{table.name}</p>
-                <p className="text-xs mt-1 uppercase tracking-wide font-medium">
-                  {statusLabel(table.status)}
-                </p>
-                {runningTotal !== null && (
-                  <p className="text-sm font-bold mt-2">
-                    {runningTotal.toFixed(2)} ₺
-                  </p>
-                )}
+        <div className="space-y-8">
+          {groupedBySections.map((group) => (
+            <div key={group.id ?? '__other__'}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                  {group.name}
+                </span>
+                <div className="flex-1 h-px bg-gray-200" />
               </div>
-            );
-          })}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {group.tables.map((table) => {
+                  const session = openSessionByTable[table.id];
+                  const runningTotal = session ? Number(session.total_price ?? 0) : null;
+                  return (
+                    <div
+                      key={table.id}
+                      onClick={() => setSelectedTable(table)}
+                      className={`rounded-xl border-2 p-5 text-center cursor-pointer hover:shadow-md transition-all duration-500 ${statusColor(table.status)} ${highlightId === table.id ? 'ring-3 ring-blue-400 shadow-lg scale-105' : ''}`}
+                    >
+                      <p className="font-semibold text-lg">{table.name}</p>
+                      <p className="text-xs mt-1 uppercase tracking-wide font-medium">
+                        {statusLabel(table.status)}
+                      </p>
+                      {runningTotal !== null && (
+                        <p className="text-sm font-bold mt-2">
+                          {runningTotal.toFixed(2)} ₺
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

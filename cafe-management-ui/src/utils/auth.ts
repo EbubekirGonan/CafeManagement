@@ -26,3 +26,8 @@ export function getUser(): User | null {
   if (!raw) return null;
   return JSON.parse(raw);
 }
+
+export function getRole(): string | null {
+  const user = getUser();
+  return user?.role ?? null;
+}
